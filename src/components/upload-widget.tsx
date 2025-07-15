@@ -9,7 +9,7 @@ export function UploadWidget() {
   const [isWidgetOpen, toggleWidgetOpen] = useCycle(false, true);
 
   return (
-    <Collapsible.Root onOpenChange={() => toggleWidgetOpen()}>
+    <Collapsible.Root onOpenChange={() => toggleWidgetOpen()} asChild>
       <motion.div
         className='overflow-hidden bg-zinc-900 max-w-[360px] rounded-xl shadow-shape'
         animate={isWidgetOpen ? 'open' : 'closed'}

@@ -9,7 +9,7 @@ import { compressImage } from '../utils/compress-image';
 export type Upload = {
   name: string;
   file: File;
-  abortController: AbortController;
+  abortController?: AbortController;
   status: 'progress' | 'success' | 'error' | 'canceled';
   originalSizeInBytes: number;
   uploadSizeInBytes: number;
@@ -25,6 +25,7 @@ type UploadState = {
 type UploadActions = {
   addUploads: (files: File[]) => void;
   cancelUpload: (uploadId: string) => void;
+  retryUpload: (uploadId: string) => void;
 };
 
 enableMapSet();
@@ -46,6 +47,16 @@ export const useUploads = create<UploadState & UploadActions>()(
 
       if (!upload) return;
 
+      const abortController = new AbortController();
+
+      updateUpload(uploadId, {
+        uploadSizeInBytes: 0,
+        remoteUrl: undefined,
+        compressedSizeInBytes: undefined,
+        abortController,
+        status: 'progress',
+      });
+
       try {
         const compressedFile = await compressImage({
           file: upload.file,
@@ -65,7 +76,7 @@ export const useUploads = create<UploadState & UploadActions>()(
               });
             },
           },
-          { signal: upload.abortController.signal }
+          { signal: abortController.signal }
         );
 
         updateUpload(uploadId, { status: 'success', remoteUrl: url });
@@ -83,19 +94,21 @@ export const useUploads = create<UploadState & UploadActions>()(
 
       if (!upload) return;
 
-      upload.abortController.abort();
+      upload.abortController?.abort();
+    }
+
+    async function retryUpload(uploadId: string) {
+      processUpload(uploadId);
     }
 
     function addUploads(files: File[]) {
       for (const file of files) {
         const uploadId = crypto.randomUUID();
-        const abortController = new AbortController();
 
         const upload: Upload = {
           name: file.name,
           file,
           status: 'progress',
-          abortController,
           originalSizeInBytes: file.size,
           uploadSizeInBytes: 0,
         };
@@ -108,7 +121,13 @@ export const useUploads = create<UploadState & UploadActions>()(
       }
     }
 
-    return { uploads: new Map(), addUploads, processUpload, cancelUpload };
+    return {
+      uploads: new Map(),
+      addUploads,
+      processUpload,
+      retryUpload,
+      cancelUpload,
+    };
   })
 );
 

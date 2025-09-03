@@ -7,6 +7,7 @@ on:
 
 env:
   AWS_S3_BUCKET_STATIC: rocketseat-upload-widget-web
+  AWS_S3_BUCKET_CDN: rocketseat-upload-widget-web-cloudfront
   SOURCE_DIST: ./dist
 
 jobs:
@@ -52,3 +53,9 @@ jobs:
         run: |
           aws s3 sync ${{ env.SOURCE_DIST }} \
           s3://${{ env.AWS_S3_BUCKET_STATIC }}/ --delete --exclude '.*git*'
+
+      - name: Sync files to S3 CDN
+        id: sync-files-to-s3-cdn
+        run: |
+          aws s3 sync ${{ env.SOURCE_DIST }} \
+          s3://${{ env.AWS_S3_BUCKET_CDN }}/ --delete --exclude '.*git*'
